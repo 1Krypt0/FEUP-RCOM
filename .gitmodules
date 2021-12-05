@@ -1,6 +1,3 @@
-[submodule "rcom-ftp"]
-	path = rcom-ftp
-	url = git@github.com:Retchut/rcom-ftp.git
 [submodule "Project"]
 	path = Project
 	url = git@github.com:Retchut/rcom-ftp.git
