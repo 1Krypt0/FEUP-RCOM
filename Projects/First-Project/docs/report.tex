@@ -1,0 +1,433 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=3.5cm]{geometry}
+\graphicspath{{./images/}}
+\usepackage{minted}
+
+\title{\includegraphics[scale=0.3]{logo.png} \\ \textbf{Data Link Protocol}}
+\author{Computer Networks\\ Bachelors in Informatics and Computing Engineering \\ \\ 3LEIC03\_G6 \\ \\ Tiago
+Rodrigues up201907021@fe.up.pt \\ Mário Travassos up201905871@fe.up.pt  }
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\section*{Summary}
+
+\paragraph{}This report will cover the first work proposed for the Computer Networks Curricular Unit, with
+the objective of creating a small application that could transfer data through two computers asynchronously,
+through a serial port.
+
+\paragraph{}The application is capable of transferring files whilst maintaining their integrity, and detect errors in transmission, resolving them if possible.
+
+\section*{Introduction}
+
+\paragraph{}This report is the result of an examination of the practical component, which was the
+development of a data transfer protocol. A serial port was used to transfer the files in an asynchronous
+fashion.
+
+The report is organized as follows:
+
+\begin{enumerate}
+  \item{Architecture - Functional blocks and interfaces}
+  \item{Code Structure - APIs, main code structures and their relation with the architecture}
+  \item{Main use cases - Identification and Call Stack Sequence}
+  \item{Data link Protocol - Main functional aspects and implementation strategy}
+  \item{Application Protocol - Main functional aspects and implementation strategy }
+  \item{Validation - Description of the tests conducted}
+  \item{Efficiency - Statistical characterization of efficiency}
+  \item{Conclusion - Summary of the above descriptions, reflection on the learning objectives}
+\end{enumerate}
+
+\section{Architecture}
+
+The application consists of two main layers, one which interacts directly with the file to be sent, and prepares it for the transfer, and another one which is responsible for interfacing with the hardware. These are, respectively, the Application Layer and the Data-Link Layer. A detailed explanation is presented further below.
+
+\subsection{Application Layer}
+
+\paragraph{}This layer is contained within the \textbf{rcom-ftp.c} file, and it encompasses everything related to interacting with the file to be sent. Opening, closing, reading its contents and preparing the data to be transfered, and assembling the file from data received are some of its responsibilities. This is the layer through which the user interacts with the application.
+
+\subsection{Data-Link Layer}
+
+\paragraph{}This layer can be found in the \textbf{ll.c} file. It is responsible for ensuring a smooth data transmission over the hardware, including opening, closing, writing and reading from the serial port, with the help of the auxiliary functions present in \textbf{config.c}, \textbf{read.c}, \textbf{send.c}, \textbf{state.c} and \textbf{utils.c}.
+
+\section{Code Structure}
+
+\paragraph{}The code is divided into seven source code files, separated by responsibility (reading from or writing to the serial port), and by layer. Also, each of them has a corresponding header file. Finally, defines are also organized by layer. Defines used in the data link and auxiliary functions of that module are stored in a dedicated header file, aptly named \textbf{datalink-defines.h} while defines used in the application layer are saved inside \textbf{rcom-ftp.h}. 
+
+\subsection{Application - rcom-ftp.c}
+
+\paragraph{}This module contains the entire application layer developed.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+        \item{main - Interacts with the user and passes the arguments given to the rest of the program.}
+        \item{sendFile - Prepares and sends the file requested by the user.}
+        \item{readFile - Receives data and assembles the file sent by the sender.}
+\end{itemize}
+
+\paragraph{Main Data Structures}
+
+\begin{itemize}
+        \item{fileData - Responsible for holding some of the file's metadata.}
+\end{itemize}
+
+\subsection{Config - config.c}
+
+\paragraph{}This module contains the functions required for setting up the serial port for proper file transferring and receiving.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+        \item{set\_config - Sets up the initial configuration for the serial port.}
+        \item{reset\_config - Restores the serial port to its initial state.}
+\end{itemize}
+
+\subsection{Link Layer - ll.c}
+
+\paragraph{}This module contains the interface for the Link Layer of the protocol.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+        \item{llopen - Opens the serial port for frame transmission.}
+        \item{llwrite - Writes a frame to the serial port.}
+        \item{llread - Reads a frame from the serial port and checks its integrity.}
+        \item{llclose - Closes the serial port.}
+\end{itemize}
+
+\subsection{Reading - read.c}
+
+\paragraph{}This module contains the functions responsible for reading from the serial port.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+  \item{readSupervisionFrame - Reads a supervision frame and checks if the information was received correctly.}
+  \item{readInformationMessage - Reads an information message and stores the data, including the BCC, in a buffer.}
+\end{itemize}
+
+\subsection{Writing - send.c}
+
+\paragraph{}This module contains the functions responsible for writing to the serial port.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+  \item{writeSupervisionAndRetry - Attempts to write a supervision Frame in 3 attempts. If it succeeds, it stops.}
+  \item{writeInformationAndRetry - Attempts to write an information Frame in 3 attempts. If successful, it stops.}
+\end{itemize}
+
+\subsection{State Management - state.c}
+
+\paragraph{}This module contains the functions responsible for managing the state of the application.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+  \item{handle\_state - Function responsible for managing the state of the application, according to the data received.}
+\end{itemize}
+
+\paragraph{Main Data Structures}
+
+\begin{itemize}
+        \item{state\_t - Enumeration containing the possible states of the application.}
+  \item{state\_machine - Besides the state of the machine, holds some of the main pieces of
+        information from each frame.}
+\end{itemize}
+
+\subsection{Utilities - utils.c}
+
+\paragraph{}This module contains some auxiliary functions, used in other modules.
+
+\paragraph{Main Functions}
+
+\begin{itemize}
+        \item{stuff\_data - This functions stuffs the data given.}
+        \item{unstuff\_frame - This functions unstuffs the frame given.}
+\end{itemize}
+
+\subsection{Constants - datalink-defines.h and rcom-ftp.h}
+
+\paragraph{}These modules contain some of the more meaningful constants shared throughout the application.
+
+\section{Main use cases}
+
+\paragraph{}The application should be first compiled with the provided Makefile, by simply running
+\verb|make|. Cleanup may be performed by running \verb|make clean|
+
+\paragraph{}The application is run in two different ways, depending on the role we are fulfilling. The basic syntax is as follows: \verb|./rcom-ftp <role> <port> [file]|
+\paragraph{}Where:
+\begin{itemize}
+        \item{\verb|role| is either \verb|emitter| or \verb|receiver|, depending on whether we want to transfer a file, or receive a file, respectively}
+        \item{\verb|port| is the number of the port to be used by that instance of the program}
+        \item{\verb|file| is the file to be sent. This parameter is only used when \verb|role| is \verb|emitter|}
+\end{itemize}
+
+\paragraph{}As an example, one can run the receiver as \verb|Eu i./rcom-ftp receiver 10|, to receive a file on the port \verb|/dev/ttyS10|, while the emitter will run \verb|./rcom-ftp emitter 11 file.ext|, to send the file \verb|file.ext| through the port \verb|/dev/ttyS11|.
+
+\paragraph{} To run the application and transfer a file, both the receiver and the emitter must be called. The emitter
+will be trying to connect for a total of 9 tries, making a stop of 1 second between each attempt. If it can't
+succeed in connecting, it will halt.
+
+\paragraph{}If the connection was successful, the application layer will begin dividing the file into data
+packets, and sending them to the receiver through the \textbf{llwrite} function, whilst the receiver reads them with the \textbf{llread} function, and assembles them into a file. Finally, both of them should call \textbf{llclose} in order to close the channel of transmission.
+
+\section{The Data link Layer}
+
+\paragraph{}This layer is responsible for interacting with the serial port, hence functionally behaving as a layer of abstraction, allowing the application to more easily make the connection required to exchange data. It uses several auxiliary functions, as
+a way to better structure the code, assigning to each function a single responsibility. The main functions
+are divided as follows:
+
+\subsection*{llopen}
+
+\paragraph{}The \textbf{llopen} function sets up the communication between the transmitter and receiver. It
+start by configuring the serial for for proper reading and writing, setting the appropriate flags and
+setting \textbf{VTIME} to 30 and \textbf{VMIN} to 0, which ensures the read function won't have to wait for
+a character to return.
+
+\paragraph{}After that, and according to the provided role, it will either send a \textbf{SET} command and
+await for a \textbf{UA}, if it is the emitter, or wait for a \textbf{SET} command and then send a
+\textbf{UA}, in the case of the transmitter. To do this, they take advantage of the
+\verb|writeSupervisionAndRetry| and the \verb|readSupervisionFrame| functions, which, respectively, handle
+writing to the serial port and reading from it, setting the appropriate state.
+
+\subsection*{llwrite}
+
+\paragraph{}As the name implies, the \textbf{llwrite} function writes a given packet of data to the serial
+port. To do this, it calls the \verb|writeInformationAndRetry| function, which, through the use of
+\verb|writeInformationFrame|, appends the frame header and trailer, and writes it to the serial port. It
+retries if the writing is unsuccessful, a total of 3 times, at which point it returns with an error.
+After successfully writing, it waits to receive a confirmation message, either accepting or rejecting the
+frame. If it accepts, then the frame is written and \textbf{llwrite} halts. Otherwise, if it was rejected, then it
+re-sends the same frame again, not increasing the attempts made (as writing was successful, but the message
+got rejected). Finally, if some error occurred, it tries to resend the message until it exhausts all attempts.
+
+\subsection*{llread}
+
+\paragraph{}The workings of \textbf{llread} are similar to those of \textbf{llwrite}. First, it tries to read the incoming information message. When successful, it then proceeds to unstuff the incoming frame and
+check if the data has been corrupted. If it hasn't, then it acknowledges the packet, sending back a
+\textbf{RR} frame, and if sent successfully, returns the size of the information read. When the data appears
+to be corrupted, it sends a \textbf{REJ} frame, telling the emitter to retry sending that information.
+Finally, if some error occurred, it returns with an error as well, ceasing transmission.
+
+\subsection*{llclose}
+
+\paragraph{}Finally, this function handles the cease of communication between the two computers. If the
+caller is the emitter, it will start of by sending a \textbf{DISC} frame, telling the receiver it wishes to
+stop communication. Then, it waits for a \textbf{DISC} response and sends a final \textbf{UA} frame before
+terminating. The receiver works the other way around, first waiting for a \textbf{DISC} frame to be read,
+then sending his \textbf{DISC}, and finally reading the \textbf{UA} before being able to shutdown. Both, in
+case there is a problem with writing, try again for a total of 9 attempts, before exiting with error.
+
+\section{The Application Layer}
+
+\subsection*{sendFile}
+
+\paragraph{}This is the main function of the emitter. It starts by retrieving some metadata from the file, namely the size of the file and the name. This will be useful both to prepare the data, to make it easier to divide into equally sized packets. Afterwards, it generates a starting control packet that contains the metadata from the file, passing it to the receiver so it too knows what file it is receiving, and proceeds to send out the file's contents. Each packet
+sent can be configured to a desired size. The value we chose as default was a maximum allowed data chunk size of 1024 bytes. All packets (save for the last one, if less than that maximum size of data remains) will be that large. Finally, it re-sends the control packet, but with a flag changed meaning that it will be end of the transmission. At each step, in the event of a malfunction, it returns
+with an error.
+
+\subsection*{receiveFile}
+
+\paragraph{}On the other end, the \textbf{receiveFile} function is in charge of handling the receiving of files. Its
+way of working is much like the one on \textbf{sendFile}. Firstly, it reads the starting packet containing
+the metadata on the file, and creates a new file, with those parameters (although the file name will have "received-" prepended to it). Afterwards, it reads the packets containing information, one by one, and assembles the file after
+each successful packet receive. Finally, it reads the end Packet, which will tell the receiver to stop trying to read any longer. Once again, if at any point the receiver detects an error reading any packet, it will stop with an error.
+
+\subsection*{generateDataPacket}
+
+\paragraph{}This function creates the packets that will be sent over to the receiver. It starts by appending
+the correct packet header, and then copies the information over to packet buffer, and returns.
+
+\subsection*{readDataPacket}
+
+\paragraph{}This function is analogous to the \textbf{generateDataPacket} one, and its job is to read a data packet and check for its integrity after transmission. To do this, it starts by checking if the packet is in fact a data packet, by verifying the first bit. Then it makes sure that the data packet received is the packet we're expecting to receive, aborting if that is not the case. Finally, and if all goes well, it retrieves the information contained in the packet and saves it in a buffer.
+
+\section{Validation}
+
+\paragraph{}In order to test the protocol, files of different sizes were sent, ranging from
+\textbf{test1.txt} (128 bytes) and \textbf{test10.pdf} (128662771 bytes). Also, the data packet size was
+varied to check for performance, with sizes going from 8 bytes to 1024 bytes. Finally, we also tested
+variations in the baudrate, with values going from 2896, all the way up to 11764736. Besides varying the
+values of certain aspects of the program, the transmission was tested with timeouts on the lab, and with
+introduction of random errors, by placing a piece of metal that would generate errors in the data transfer sometimes. Upon each test, the integrity of the generated file was verified by comparing the hashes of the original and the received file, using the \textbf{md5sum} hashing function.
+
+\section{Efficiency}
+
+\paragraph{}All the tests results are available in \textbf{Annex II}
+
+\subsection*{Variation in the File Size}
+
+\paragraph{}As expected, an increase in the file size increased the execution time linearly, both for the
+execution time of the emitter and the receiver. This is expected and implies that the system functions
+well regardless of the input given, which is key in a data transfer protocol.
+
+\subsection*{Variation in the Packet Size}
+
+\paragraph{}Regarding the Data Packet Size, it is possible to see that with larger packets there is a
+performance gain to be had, as there is less overhead with adding and decoupling packet headers and frame
+headers and trailers. But also, for packets that are too large, the possibility of errors being generated
+and the need for re-transmission can become burdening, and slow down the rest of the program.
+
+\subsection*{Variation in the Baudrate}
+
+\paragraph{}For the values tested, no significant changes in the execution time of the program were recorded.
+
+\section{Conclusion}
+
+\paragraph{}The task assigned consisted in implementing a data transfer protocol to communicate over a serial
+port. In this assignment, it was key to create distinct layers, and, more importantly, make sure they work independently of one another, not knowing the details of each other's implementation. This lead to a structure in which the application layer, the ``highest level''
+section of the program, only knew what the data-link layer did, but not how it operated, and the data-link
+knew only that it would receive data and would have to transmit it. This effectively creates two distinct
+entities that in nothing influence each other, but work together for the objective of transmitting data.
+
+\paragraph{}The project was completed successfully, and it contributed a great deal for deepening our knowledge of how data is transferred in between devices, how eventual errors are handled, and how a file can be sent from one location to another location, possibly quite far away, seemingly by magic.
+
+\newpage
+
+\section*{Annex I - Source Code}
+
+\subsection*{config.c}
+
+\inputminted{c}{config.c}
+
+\newpage
+
+\subsection*{config.h}
+
+\inputminted{c}{config.h}
+
+\newpage
+
+\subsection*{datalink-defines.h}
+
+\inputminted{c}{datalink-defines.h}
+
+\newpage
+
+\subsection*{ll.c}
+
+\inputminted{c}{ll.c}
+
+\newpage
+
+\subsection*{ll.h}
+
+\inputminted{c}{ll.h}
+
+\newpage
+
+\subsection*{rcom-ftp.c}
+
+\inputminted{c}{rcom-ftp.c}
+
+\newpage
+
+\subsection*{rcom-ftp.h}
+
+\inputminted{c}{rcom-ftp.h}
+
+\newpage
+
+\subsection*{read.c}
+
+\inputminted{c}{read.c}
+
+\newpage
+
+\subsection*{read.h}
+
+\inputminted{c}{read.h}
+
+\newpage
+
+\subsection*{send.c}
+
+\inputminted{c}{send.c}
+
+\newpage
+
+\subsection*{send.h}
+
+\inputminted{c}{send.h}
+
+\newpage
+
+\subsection*{state.c}
+
+\inputminted{c}{state.c}
+
+\newpage
+
+\subsection*{state.h}
+
+\inputminted{c}{state.h}
+
+\newpage
+
+\subsection*{utils.c}
+
+\inputminted{c}{utils.c}
+
+\newpage
+
+\subsection*{utils.h}
+
+\inputminted{c}{utils.h}
+
+\section*{Annex II - Tests}
+
+\subsection*{Variation in the File Size}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph1.jpeg}
+    \caption{Execution time of the emitter according to File Size}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph2.jpeg}
+    \caption{Execution time of the receiver according to File Size}
+\end{figure}
+
+\newpage
+
+\subsection*{Variation in the Packet Size}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph3.jpeg}
+    \caption{Execution time of the emitter according to Packet Size}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph4.jpeg}
+    \caption{Execution time of the receiver according to Packet Size}
+\end{figure}
+
+\newpage
+
+\subsection*{Variation in the Baudrate}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph5.jpeg}
+    \caption{Execution time of the emitter according to Baudrate}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.45]{graph6.jpeg}
+    \caption{Execution time of the receiver according to Baudrate}
+\end{figure}
+
+\end{document}
