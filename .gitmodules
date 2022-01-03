@@ -1,3 +1,6 @@
 [submodule "Projects/First-Project"]
 	path = Projects/First-Project
 	url = git@github.com:Retchut/rcom-data-link-protocol.git
+[submodule "Projects/Second-Project"]
+	path = Projects/Second-Project
+	url = git@github.com:1Krypt0/RC-FTP.git
